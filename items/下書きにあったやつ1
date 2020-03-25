@@ -1,0 +1,9 @@
+Unity
+
+Windowsで動いてAndroidで動かないとき
+
+- File名の大文字小文字を疑う
+  - どっちかがcase-sensitiveだったはず（多分Android）
+- ProjectSettingsのQuarityを疑う
+  - ProfileがVery Lowとかになっていると、Boneの影響数が2になっておりスキニングが壊れる
+- StreamingAssetのパス
