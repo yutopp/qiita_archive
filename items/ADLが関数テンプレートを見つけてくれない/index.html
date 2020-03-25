@@ -1,0 +1,155 @@
+<p><a href="http://stackoverflow.com/questions/2953684/why-doesnt-adl-find-function-templates" rel="nofollow noopener" target="_blank">Why doesn't ADL find function templates? - StackOverflow</a></p>
+
+<p>oh...知らなかった...<br>
+とりあえず，VC11で書いたコードをg++にかけたとき引っかかったのでメモ．<br>
+実際のコードを単純にしすぎたために，意図が分からないサンプルコードになってます・・・．</p>
+
+<h1>
+<span id="間違ってる感じのコード" class="fragment"></span><a href="#%E9%96%93%E9%81%95%E3%81%A3%E3%81%A6%E3%82%8B%E6%84%9F%E3%81%98%E3%81%AE%E3%82%B3%E3%83%BC%E3%83%89"><i class="fa fa-link"></i></a>間違ってる感じのコード</h1>
+
+<p>下のコードはコンパイルエラーになります．</p>
+
+<div class="code-frame" data-lang="c++"><div class="highlight"><pre><span class="cp">#include &lt;iostream&gt;
+</span>
+<span class="k">namespace</span> <span class="n">test</span>
+<span class="p">{</span>
+  <span class="k">namespace</span> <span class="n">ns_a</span>
+  <span class="p">{</span>
+    <span class="k">struct</span> <span class="n">A</span> <span class="p">{};</span>
+
+    <span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+    <span class="n">T</span> <span class="n">func</span><span class="p">(</span> <span class="n">A</span><span class="o">*</span> <span class="p">)</span>
+    <span class="p">{</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"A"</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+      <span class="k">return</span> <span class="n">T</span><span class="p">();</span>
+    <span class="p">}</span>
+  <span class="p">}</span> <span class="c1">// namespace ns_a</span>
+
+  <span class="k">struct</span> <span class="n">Chikuwa</span> <span class="p">{};</span>
+
+  <span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+  <span class="n">Chikuwa</span> <span class="n">call</span><span class="p">()</span>
+  <span class="p">{</span>
+    <span class="k">return</span> <span class="n">func</span><span class="o">&lt;</span><span class="n">Chikuwa</span><span class="o">&gt;</span><span class="p">(</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">T</span><span class="o">*&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace test</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="n">test</span><span class="o">::</span><span class="n">call</span><span class="o">&lt;</span><span class="n">test</span><span class="o">::</span><span class="n">ns_a</span><span class="o">::</span><span class="n">A</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>次に，下のコードのように，VC11では何故かvoid*を取る関数を同じ名前空間に入れておくとコンパイルが通り，かつ意図した通りに動作します．(g++ではコンパイルエラー)</p>
+
+<div class="code-frame" data-lang="c++"><div class="highlight"><pre><span class="cp">#include &lt;iostream&gt;
+</span>
+<span class="k">namespace</span> <span class="n">test</span>
+<span class="p">{</span>
+  <span class="k">namespace</span> <span class="n">ns_a</span>
+  <span class="p">{</span>
+    <span class="k">struct</span> <span class="n">A</span> <span class="p">{};</span>
+
+    <span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+    <span class="n">T</span> <span class="n">func</span><span class="p">(</span> <span class="n">A</span><span class="o">*</span> <span class="p">)</span>
+    <span class="p">{</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"A"</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+      <span class="k">return</span> <span class="n">T</span><span class="p">();</span>
+    <span class="p">}</span>
+  <span class="p">}</span> <span class="c1">// namespace ns_a</span>
+
+  <span class="k">struct</span> <span class="n">Chikuwa</span> <span class="p">{};</span>
+
+  <span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+  <span class="n">Chikuwa</span> <span class="n">call</span><span class="p">()</span>
+  <span class="p">{</span>
+    <span class="k">return</span> <span class="n">func</span><span class="o">&lt;</span><span class="n">Chikuwa</span><span class="o">&gt;</span><span class="p">(</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">T</span><span class="o">*&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+  <span class="kt">void</span> <span class="n">func</span><span class="p">(</span> <span class="kt">void</span><span class="o">*</span> <span class="p">)</span> <span class="p">{</span> <span class="cm">/*dummy*/</span><span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace test</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="n">test</span><span class="o">::</span><span class="n">call</span><span class="o">&lt;</span><span class="n">test</span><span class="o">::</span><span class="n">ns_a</span><span class="o">::</span><span class="n">A</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h1>
+<span id="正解" class="fragment"></span><a href="#%E6%AD%A3%E8%A7%A3"><i class="fa fa-link"></i></a>正解？</h1>
+
+<p>StackOverflowに書いてあるように，usingで可視化するとどちらのコンパイラでも上手くいきます．</p>
+
+<div class="code-frame" data-lang="c++"><div class="highlight"><pre><span class="cp">#include &lt;iostream&gt;
+</span>
+<span class="k">namespace</span> <span class="n">test</span>
+<span class="p">{</span>
+  <span class="k">namespace</span> <span class="n">ns_a</span>
+  <span class="p">{</span>
+    <span class="k">struct</span> <span class="n">A</span> <span class="p">{};</span>
+
+    <span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+    <span class="n">T</span> <span class="n">func</span><span class="p">(</span> <span class="n">A</span><span class="o">*</span> <span class="p">)</span>
+    <span class="p">{</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"A"</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+      <span class="k">return</span> <span class="n">T</span><span class="p">();</span>
+    <span class="p">}</span>
+  <span class="p">}</span> <span class="c1">// namespace ns_a</span>
+
+  <span class="k">class</span> <span class="nc">Chikuwa</span> <span class="p">{};</span>
+
+  <span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+  <span class="n">Chikuwa</span> <span class="n">call</span><span class="p">()</span>
+  <span class="p">{</span>
+    <span class="k">using</span> <span class="n">ns_a</span><span class="o">::</span><span class="n">func</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">func</span><span class="o">&lt;</span><span class="n">Chikuwa</span><span class="o">&gt;</span><span class="p">(</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">T</span><span class="o">*&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace test</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="n">test</span><span class="o">::</span><span class="n">call</span><span class="o">&lt;</span><span class="n">test</span><span class="o">::</span><span class="n">ns_a</span><span class="o">::</span><span class="n">A</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>でも一々using使うのも大変なので，こんなので使うことにしました．どちらのコンパイラでも通ります．(C++11)</p>
+
+<div class="code-frame" data-lang="c++"><div class="highlight"><pre><span class="cp">#include &lt;type_traits&gt; 
+#include &lt;iostream&gt;
+</span>
+<span class="k">namespace</span> <span class="n">test</span>
+<span class="p">{</span>
+  <span class="k">namespace</span> <span class="n">ns_a</span>
+  <span class="p">{</span>
+    <span class="k">struct</span> <span class="n">A</span> <span class="p">{};</span>
+
+    <span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+    <span class="n">T</span> <span class="n">func</span><span class="p">(</span> <span class="n">T</span><span class="o">*</span><span class="p">,</span> <span class="n">A</span><span class="o">*</span> <span class="p">)</span>
+    <span class="p">{</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"A"</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+      <span class="k">return</span> <span class="n">T</span><span class="p">();</span>
+    <span class="p">}</span>
+  <span class="p">}</span> <span class="c1">// namespace ns_a</span>
+
+  <span class="k">struct</span> <span class="n">Chikuwa</span> <span class="p">{};</span>
+
+  <span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+  <span class="n">Chikuwa</span> <span class="n">call</span><span class="p">()</span>
+  <span class="p">{</span>
+    <span class="k">typedef</span> <span class="n">std</span><span class="o">::</span><span class="n">add_pointer</span><span class="o">&lt;</span><span class="n">Chikuwa</span><span class="o">&gt;::</span><span class="n">type</span> <span class="n">cp</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">func</span><span class="p">(</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">cp</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">T</span><span class="o">*&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace test</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="n">test</span><span class="o">::</span><span class="n">call</span><span class="o">&lt;</span><span class="n">test</span><span class="o">::</span><span class="n">ns_a</span><span class="o">::</span><span class="n">A</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h1>
+<span id="で" class="fragment"></span><a href="#%E3%81%A7"><i class="fa fa-link"></i></a>で</h1>
+
+<p>実際こんなコードを書くのはどうなのだろうか・・・と悩む最近でございました．<br>
+(Qiitaに一度投稿してみたかったノリで書きました．)</p>

@@ -1,0 +1,15 @@
+<p>(自前のArch Linux と Manjaro Linuxで試したところ)、不明な公開鍵についてのエラーが出るようです。<br>
+なのでその際には、</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yaourt -P fcitx-mozc -i fcitx-mozc
+   ...
+==&gt; gpg でソースファイルの署名を検証...
+fcitx-mozc-2.18.2612.102.1.patch ... 失敗 (不明な公開鍵 &lt;keyid&gt;)
+
+$ sudo pacman-key --recv-keys &lt;keyid&gt;
+$ gpg --recv-keys &lt;keyid&gt;
+$ yaourt -P fcitx-mozc -i fcitx-mozc
+</pre></div></div>
+
+<p>とすると良いです。<br>
+調べればすぐ出てくるかも知れませんが、念の為メモとしてコメントを残させて下さい。</p>

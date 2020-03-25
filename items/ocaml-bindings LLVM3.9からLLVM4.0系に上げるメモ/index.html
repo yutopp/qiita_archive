@@ -1,0 +1,46 @@
+
+<h1>
+<span id="背景" class="fragment"></span><a href="#%E8%83%8C%E6%99%AF"><i class="fa fa-link"></i></a>背景</h1>
+
+<p>LLVM4.0より、C APIからAttributes関係の関数が消えました。<a href="http://releases.llvm.org/4.0.0/docs/ReleaseNotes.html#non-comprehensive-list-of-changes-in-this-release" rel="nofollow noopener" target="_blank">LLVM 4.0.0 Release Notes</a><br>
+それに伴って、LLVMのocaml-bindingsのAttribute関係の定義もごそっと消えてしまいました。そこで、この記事では自分が調べたLLVM3.9からLLVM4.0への書き換え方法のメモを書きます。</p>
+
+<h1>
+<span id="本題" class="fragment"></span><a href="#%E6%9C%AC%E9%A1%8C"><i class="fa fa-link"></i></a>本題</h1>
+
+<p>まず、該当コミットは<a href="https://github.com/llvm-mirror/llvm/commit/18c0ee263804d2d736405b66898309583ee8385e" rel="nofollow noopener" target="_blank">これ</a>です。</p>
+
+<p>コレを見るに、今まで<code>Llvm.Attribute.Alwaysinline</code>のように指定していた値は、<code>Llvm.create_enum_attr ctx "alwaysinline" 0L</code>で代替のものが作れるようです(<code>ctx: Llvm.llcontext</code>)。</p>
+
+<p>また、<code>Llvm.add_function_attr f Llvm.Attribute.Alwaysinline</code>のように呼び出していた関数は、<code>Llvm.add_function_attr f (Llvm.create_enum_attr ctx "alwaysinline" 0L) Llvm.AttrIndex.Function</code>のように置き換えれば良さそうです。</p>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<p>関数への<code>alwaysinline</code>指定の方法の変化点をまとめます。</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align: left">LLVM3.9</th>
+<th style="text-align: left">LLVM4.0</th>
+<th style="text-align: left">変更点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left"><code>Llvm.Attribute.Alwaysinline</code></td>
+<td style="text-align: left">
+<code>Llvm.create_enum_attr ctx "alwaysinline" 0L</code><br>または<br><code>let k = Llvm.enum_attr_kind "alwaysinline" in Llvm.attr_of_repr ctx (Llvm.AttrRepr.Enum(k, 0L))</code>
+</td>
+<td style="text-align: left">今まで属性は定数で定義されていましたが、<code>alwaysinline</code>のような<code>llattrkind型</code>の属性の種類と、その種類に引数を指定した<code>llattribute型</code>の属性を分けて定義できるようになったようです。</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>Llvm.add_function_attr f Llvm.Attribute.Alwaysinline</code></td>
+<td style="text-align: left"><code>L.add_function_attr f (Llvm.create_enum_attr ctx "alwaysinline" 0L) Llvm.AttrIndex.Function</code></td>
+<td style="text-align: left">定数ではなく生成した<code>llattrbute型</code>の値を渡すようになったことと、<code>Llvm.AttrIndex.*</code>によってどの場所に属性が付くか明示的に指定できるようになったようです。</td>
+</tr>
+</tbody>
+</table>
+
+<p>上記以外にも、属性が明確に<code>llattribute型</code>の値として扱われるようになったことで、<code>is_enum_attr</code>などの属性に対する関数などが追加されているようです。</p>
